@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\calebmwaniki\\OneDrive - TopCartKe\\Desktop\\Backend trial\\ecommerce-admin\\logs\\.fe0cf1198eaa9011ca01775ea21275dd66fc9bad-audit.json",
+    "files": [
+        {
+            "date": 1744266730657,
+            "name": "C:\\Users\\calebmwaniki\\OneDrive - TopCartKe\\Desktop\\Backend trial\\ecommerce-admin\\logs\\error-2025-04-10.log",
+            "hash": "6f815ce54ec19551cdd73af20e925708057d6a160f4b8af16b2169c4ffc24065"
+        },
+        {
+            "date": 1744718861686,
+            "name": "C:\\Users\\calebmwaniki\\OneDrive - TopCartKe\\Desktop\\Backend trial\\ecommerce-admin\\logs\\error-2025-04-15.log",
+            "hash": "3a2da5fe65d0d84f9b48709cffda77a4d035181cd5be5a15e144db9518a3ea83"
+        }
+    ],
+    "hashType": "sha256"
+}
