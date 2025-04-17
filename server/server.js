@@ -1,7 +1,7 @@
 // Load env vars first
 require('dotenv').config({ path: './config/config.env' });
 
-const app = require('./server/app');
+const app = require('./app');
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
