@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getOrders,
+  getMyOrders,
   getOrder,
   createOrder,
   updateOrder,
@@ -22,6 +23,8 @@ router
     getOrders
   )
   .post(createOrder);
+
+router.route('/myorders').get(getMyOrders);
 
 router
   .route('/:id')

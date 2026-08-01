@@ -11,6 +11,24 @@ exports.getOrders = asyncHandler(async (req, res, next) => {
   res.status(200).json(res.advancedResults);
 });
 
+// @desc    Get the logged-in user's own orders
+// @route   GET /api/v1/orders/myorders
+// @access  Private
+exports.getMyOrders = asyncHandler(async (req, res, next) => {
+  const orders = await Order.find({ user: req.user.id })
+    .sort('-createdAt')
+    .populate({
+      path: 'products.product',
+      select: 'name price images'
+    });
+
+  res.status(200).json({
+    success: true,
+    count: orders.length,
+    data: orders
+  });
+});
+
 // @desc    Get single order
 // @route   GET /api/v1/orders/:id
 // @access  Private
