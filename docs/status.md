@@ -149,9 +149,19 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
   these were leaked in git history and have not been rotated (unlike `JWT_SECRET`,
   which was rotated as part of this pass without needing any external account).
 - **Choose and provision a deployment target** for this backend (Render/Railway/Fly/
-  etc.) — nothing currently specifies where this runs in production.
-- **Set the new `MONGODB_URI`** once the shared Atlas cluster (GnG Express + DripWiz,
-  see `docs/roadmap.md`) has a `dripwiz` database provisioned.
+  etc.) — nothing currently specifies where this runs in production. This is now the
+  main blocker: the database side is ready (see below), but there's no live backend
+  to point a frontend at yet.
+- ~~Set the new `MONGODB_URI` once the shared Atlas cluster has a `dripwiz` database
+  provisioned~~ — **done 2026-08-01.** The existing `GnG-Express-Prod` Atlas project's
+  `Cluster0` (already running GnG Express's `gng` database) now also has a `dripwiz`
+  database and a dedicated `dripwiz_app` user, so no new cluster was needed. Network
+  access is already open (`0.0.0.0/0`, inherited from the existing project config).
+  The real `MONGODB_URI` is recorded in the owner's password manager / local
+  `config.env`, not committed here — whoever provisions the deployment target above
+  needs to set it as an env var there, in the same `mongodb+srv://dripwiz_app:<password>
+  @cluster0.6gws1z0.mongodb.net/dripwiz?retryWrites=true&w=majority&appName=Cluster0`
+  shape as `config.env.example` already documents.
 - **Set `JWT_SECRET`** (the new rotated value, currently only in the local
   `config.env`) on whatever hosting is chosen.
 - **Decide on and provision an email-sending service** (SendGrid for production, or
@@ -162,10 +172,10 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
 
 ## Recommended priority order
 
-1. Provision the shared Atlas cluster's `dripwiz` database (tracked in the Velocity
-   repo's docs alongside the GnG Express consolidation) and deploy this backend
-   somewhere with real network access, so all the fixes above can actually be
-   smoke-tested against a live MongoDB — this sandbox couldn't do that.
+1. Deploy this backend somewhere with real network access (the `dripwiz` database
+   and its Atlas user are already provisioned — see External prerequisites above),
+   so all the fixes above can actually be smoke-tested against a live MongoDB —
+   this sandbox couldn't do that.
 2. Rotate the Cloudinary credentials.
 3. Build the new frontend against this now-fixed API.
 4. Wire up real email sending once an SMTP/SendGrid account exists, if forgot-password
