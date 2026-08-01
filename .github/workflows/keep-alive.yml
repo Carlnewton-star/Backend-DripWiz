@@ -1,0 +1,15 @@
+name: Keep Render backend alive
+ 
+on:
+  schedule:
+    # Every 10 minutes — Render's free tier spins down after ~15 min of
+    # inactivity, so this stays comfortably ahead of that.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+ 
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: curl -fsS https://dripwiz-backend.onrender.com/api/v1/health
