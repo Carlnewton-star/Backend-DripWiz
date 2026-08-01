@@ -135,9 +135,12 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
   SMTP/SendGrid account (external prerequisite below); the code now fails clearly
   instead of crashing, but nobody can reset a password via email yet.
 - No automated tests exist yet.
-- The admin dashboard frontend is still unrecoverable (broken submodule reference,
-  no recorded origin) — a fresh frontend build is tracked separately, not part of
-  this backend fix pass.
+- ~~The admin dashboard frontend is still unrecoverable...~~ — **resolved
+  2026-08-01.** The broken `client/` gitlink turned out to be a simple orphaned
+  submodule reference (no `.gitmodules`, no nested `.git`) — fixed with a plain
+  `git rm --cached client`, then a full storefront (Home, Shop with category
+  filters, Product detail, Cart/checkout, Login/Register, Account/orders) was built
+  from scratch against the real API and deployed to Vercel (see Known gaps above).
 
 ## Deferred by explicit request
 
@@ -154,10 +157,14 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
   which was rotated as part of this pass without needing any external account).
 - ~~Choose and provision a deployment target~~ — **done 2026-08-01**, deployed to
   Render (free tier) as `dripwiz-backend`, live at
-  https://dripwiz-backend.onrender.com. `FRONTEND_URL` on this service is currently
-  a placeholder (`http://localhost:5173`) since the real frontend doesn't exist yet
-  (tracked in Recommended priority order) — update it to the real deployed frontend
-  origin once that exists, or CORS will block it.
+  https://dripwiz-backend.onrender.com. ~~`FRONTEND_URL` on this service is
+  currently a placeholder~~ — **resolved 2026-08-01**: a real storefront frontend
+  (Vite/React/TS, `client/`) is now built and deployed to Vercel under a dedicated
+  `DripWiz254` account/team, live at
+  https://dripwiz-frontend-3p29u72yk-dripwiz255.vercel.app. `FRONTEND_URL` has been
+  updated on Render to match, which fixed a CORS block that was surfacing as
+  browser-side 503s on `/api/v1/products` (the server's CORS origin allowlist
+  rejects any origin not in `FRONTEND_URL`/`localhost:5173`).
 - ~~Set the new `MONGODB_URI` once the shared Atlas cluster has a `dripwiz` database
   provisioned~~ — **done 2026-08-01.** The existing `GnG-Express-Prod` Atlas project's
   `Cluster0` (already running GnG Express's `gng` database) now also has a `dripwiz`
@@ -182,8 +189,8 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
 
 1. ~~Deploy this backend somewhere with real network access...~~ — **done
    2026-08-01**, see Known gaps and bugs above.
-2. Build the real frontend (tracked separately), then point this service's
-   `FRONTEND_URL` at its deployed origin.
+2. ~~Build the real frontend..., then point this service's `FRONTEND_URL` at its
+   deployed origin.~~ — **done 2026-08-01**, see above.
 3. Rotate the Cloudinary credentials.
 3. Build the new frontend against this now-fixed API.
 4. Wire up real email sending once an SMTP/SendGrid account exists, if forgot-password
