@@ -118,15 +118,19 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
 
 ## Known gaps and bugs
 
-- **Not yet verified against a real MongoDB.** Every fix above was verified via
-  `node --check` (syntax) across all touched files, a standalone require of `app.js`
-  (confirms it now actually exports correctly with no crash), and manual review — but
-  this sandbox has no outbound network access to either a local `mongod` or a
-  downloadable one (`mongodb-memory-server`'s binary CDN isn't reachable from here).
-  **Must be smoke-tested against the real shared Atlas cluster once deployed** — see
-  Recommended priority order.
-- No deployment target chosen yet — still no Dockerfile, CI config, or hosting
-  decision. This blocks real network verification of the fixes above.
+- ~~Not yet verified against a real MongoDB~~ / ~~no deployment target chosen~~ —
+  **both resolved 2026-08-01.** Deployed as a free-tier Render web service
+  (`dripwiz-backend`, https://dripwiz-backend.onrender.com), build command `npm
+  install`, start command `npm start` (root `package.json` → `node server/server.js`).
+  Render's deploy log shows `Mongoose connected to DB` on boot — a real connection to
+  the shared Atlas cluster's `dripwiz` database via `dripwiz_app`, not a mock. Live
+  verification: `GET /api/v1/health` returns `{"ok":true}` (the DB-ping health check
+  added in this pass actually succeeds), and `GET /api/v1/products` returns
+  `{"success":true,"count":0,"pagination":{},"data":[]}` — a real Mongoose query
+  round-tripping through routing → controller → model → DB → response, on an
+  intentionally-empty fresh database. Free-tier caveat: this instance spins down
+  after inactivity like the other two portfolio backends; a keep-alive cron is
+  tracked the same way as Bree's/Velocity/GnG's.
 - Actual email sending (forgot-password) still doesn't work — needs a real
   SMTP/SendGrid account (external prerequisite below); the code now fails clearly
   instead of crashing, but nobody can reset a password via email yet.
@@ -148,10 +152,12 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
 - **Rotate `CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET`** on Cloudinary's dashboard —
   these were leaked in git history and have not been rotated (unlike `JWT_SECRET`,
   which was rotated as part of this pass without needing any external account).
-- **Choose and provision a deployment target** for this backend (Render/Railway/Fly/
-  etc.) — nothing currently specifies where this runs in production. This is now the
-  main blocker: the database side is ready (see below), but there's no live backend
-  to point a frontend at yet.
+- ~~Choose and provision a deployment target~~ — **done 2026-08-01**, deployed to
+  Render (free tier) as `dripwiz-backend`, live at
+  https://dripwiz-backend.onrender.com. `FRONTEND_URL` on this service is currently
+  a placeholder (`http://localhost:5173`) since the real frontend doesn't exist yet
+  (tracked in Recommended priority order) — update it to the real deployed frontend
+  origin once that exists, or CORS will block it.
 - ~~Set the new `MONGODB_URI` once the shared Atlas cluster has a `dripwiz` database
   provisioned~~ — **done 2026-08-01.** The existing `GnG-Express-Prod` Atlas project's
   `Cluster0` (already running GnG Express's `gng` database) now also has a `dripwiz`
@@ -162,8 +168,10 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
   needs to set it as an env var there, in the same `mongodb+srv://dripwiz_app:<password>
   @cluster0.6gws1z0.mongodb.net/dripwiz?retryWrites=true&w=majority&appName=Cluster0`
   shape as `config.env.example` already documents.
-- **Set `JWT_SECRET`** (the new rotated value, currently only in the local
-  `config.env`) on whatever hosting is chosen.
+- ~~Set `JWT_SECRET` ... on whatever hosting is chosen~~ — **done 2026-08-01**, set
+  on the live Render service along with the rest of the required env vars
+  (`MONGODB_URI`, Cloudinary credentials — the leaked ones, still pending rotation
+  per the bullet above).
 - **Decide on and provision an email-sending service** (SendGrid for production, or
   any SMTP host for dev) if the forgot-password flow needs to actually work — the code
   is ready for either, it just needs credentials.
@@ -172,11 +180,11 @@ the frontend (a fresh React/Vite/TypeScript build, tracked separately).
 
 ## Recommended priority order
 
-1. Deploy this backend somewhere with real network access (the `dripwiz` database
-   and its Atlas user are already provisioned — see External prerequisites above),
-   so all the fixes above can actually be smoke-tested against a live MongoDB —
-   this sandbox couldn't do that.
-2. Rotate the Cloudinary credentials.
+1. ~~Deploy this backend somewhere with real network access...~~ — **done
+   2026-08-01**, see Known gaps and bugs above.
+2. Build the real frontend (tracked separately), then point this service's
+   `FRONTEND_URL` at its deployed origin.
+3. Rotate the Cloudinary credentials.
 3. Build the new frontend against this now-fixed API.
 4. Wire up real email sending once an SMTP/SendGrid account exists, if forgot-password
    turns out to matter for this product.
