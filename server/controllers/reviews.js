@@ -1,7 +1,7 @@
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
-const Review = require('../models/Review');
-const Product = require('../models/Product');
+const Review = require('../models/review');
+const Product = require('../models/product');
 
 // @desc    Get reviews
 // @route   GET /api/v1/reviews
@@ -137,7 +137,7 @@ exports.deleteReview = asyncHandler(async (req, res, next) => {
     );
   }
 
-  await review.remove();
+  await review.deleteOne();
 
   // Update product rating
   const product = await Product.findById(review.product);

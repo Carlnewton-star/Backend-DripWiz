@@ -1,4 +1,4 @@
-const Product = require('../models/Product');
+const Product = require('../models/product');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const cloudinary = require('cloudinary').v2;
@@ -90,7 +90,7 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
     await cloudinary.uploader.destroy(image.public_id);
   }
 
-  await product.remove();
+  await product.deleteOne();
 
   res.status(200).json({
     success: true,

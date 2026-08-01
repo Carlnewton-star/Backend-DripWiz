@@ -3,9 +3,9 @@ require('dotenv').config({ path: './config/config.env' });
 
 const app = require('./app');
 const http = require('http');
-const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const logger = require('./utils/logger');
+const { connectDB } = require('./config/db');
 
 // Normalize port number
 const port = normalizePort(process.env.PORT || 5000);
@@ -17,7 +17,7 @@ const server = http.createServer(app);
 // Set up Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: process.env.FRONTEND_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
   }
@@ -26,7 +26,7 @@ const io = new Server(server, {
 // Socket.io connection handler
 io.on('connection', (socket) => {
   logger.info('New client connected');
-  
+
   socket.on('disconnect', () => {
     logger.info('Client disconnected');
   });
@@ -38,16 +38,16 @@ io.on('connection', (socket) => {
   });
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
+// Connect to MongoDB, then start listening — starting the HTTP server
+// before the DB connection is ready would let requests through that can
+// only fail.
+connectDB()
   .then(() => {
-    logger.info('Connected to MongoDB');
-    // Start server after DB connection is established
     server.listen(port);
     server.on('error', onError);
     server.on('listening', onListening);
   })
-  .catch(err => {
+  .catch((err) => {
     logger.error('MongoDB connection error:', err);
     process.exit(1);
   });

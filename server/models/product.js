@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
-const Review = require('./Review');
+const Review = require('./review');
 
 const productSchema = new mongoose.Schema({
   name: {
@@ -76,8 +76,12 @@ productSchema.pre('save', function(next) {
   next();
 });
 
-// Cascade delete reviews when a product is deleted
-productSchema.pre('remove', async function(next) {
+// Cascade delete reviews when a product is deleted. Mongoose 7+ removed
+// the .remove() document method entirely, and with it the old 'remove'
+// hook stopped firing for anything — this now hooks 'deleteOne' in
+// document-middleware mode (query:false), which fires for
+// product.deleteOne() calls (see controllers/products.js).
+productSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
   await Review.deleteMany({ product: this._id });
   next();
 });

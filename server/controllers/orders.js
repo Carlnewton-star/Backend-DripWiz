@@ -1,7 +1,8 @@
+const mongoose = require('mongoose');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
-const Order = require('../models/Order');
-const Product = require('../models/Product');
+const Order = require('../models/order');
+const Product = require('../models/product');
 
 // @desc    Get all orders
 // @route   GET /api/v1/orders
@@ -50,40 +51,76 @@ exports.getOrder = asyncHandler(async (req, res, next) => {
 exports.createOrder = asyncHandler(async (req, res, next) => {
   const { products, shippingAddress, paymentMethod } = req.body;
 
-  if (products && products.length === 0) {
+  if (!products || products.length === 0) {
     return next(new ErrorResponse('No order items', 400));
   }
 
-  // Calculate prices
-  const items = await Promise.all(
-    products.map(async (item) => {
-      const product = await Product.findById(item.product);
-      return {
-        product: item.product,
-        quantity: item.quantity,
-        price: product.price
-      };
-    })
-  );
+  // Stock is decremented atomically per item (findOneAndUpdate with a
+  // stock >= quantity filter) inside a transaction, and the whole order is
+  // rolled back if anything fails — a referenced product that doesn't
+  // exist, or one that's out of stock, previously either crashed with an
+  // unhandled TypeError (product.price on a null product) or oversold
+  // stock under concurrent requests (nothing ever checked or decremented
+  // it at all). This mirrors the stock-oversell guard already built for
+  // Bree's Beauty Luxe's Postgres-based catalog, adapted to Mongo's
+  // transaction model — same guarantee, different engine.
+  const session = await mongoose.startSession();
 
-  const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const taxPrice = subtotal * 0.15; // 15% tax
-  const totalPrice = subtotal + taxPrice;
+  try {
+    let items;
 
-  const order = await Order.create({
-    user: req.user.id,
-    products: items,
-    shippingAddress,
-    paymentMethod,
-    subtotal,
-    taxPrice,
-    totalPrice
-  });
+    await session.withTransaction(async () => {
+      items = await Promise.all(
+        products.map(async (item) => {
+          const product = await Product.findOneAndUpdate(
+            { _id: item.product, stock: { $gte: item.quantity } },
+            { $inc: { stock: -item.quantity } },
+            { new: true, session }
+          );
 
-  res.status(201).json({
-    success: true,
-    data: order
-  });
+          if (!product) {
+            // Either the product doesn't exist, or there isn't enough
+            // stock — same ErrorResponse either way, but check existence
+            // separately so the message is accurate.
+            const exists = await Product.exists({ _id: item.product }).session(session);
+            throw new ErrorResponse(
+              exists
+                ? `Not enough stock for product ${item.product}`
+                : `Product not found with id of ${item.product}`,
+              400
+            );
+          }
+
+          return {
+            product: item.product,
+            quantity: item.quantity,
+            price: product.price
+          };
+        })
+      );
+    });
+
+    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const taxPrice = subtotal * 0.15; // 15% tax
+    const totalPrice = subtotal + taxPrice;
+
+    const order = await Order.create({
+      user: req.user.id,
+      products: items,
+      shippingAddress,
+      paymentMethod,
+      subtotal,
+      taxPrice,
+      totalPrice
+    });
+
+    res.status(201).json({
+      success: true,
+      data: order
+    });
+  } finally {
+    await session.endSession();
+  }
 });
 
 // @desc    Update order to paid
@@ -127,7 +164,7 @@ exports.deleteOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  await order.remove();
+  await order.deleteOne();
 
   res.status(200).json({
     success: true,

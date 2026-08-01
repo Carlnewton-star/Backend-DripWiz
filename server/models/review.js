@@ -64,8 +64,9 @@ reviewSchema.post('save', function() {
   this.constructor.getAverageRating(this.product);
 });
 
-// Call getAverageRating before remove
-reviewSchema.post('remove', function() {
+// Call getAverageRating after delete. Same Mongoose 7+ removal as
+// product.js's cascade hook above — 'remove' never fires anymore.
+reviewSchema.post('deleteOne', { document: true, query: false }, function() {
   this.constructor.getAverageRating(this.product);
 });
 

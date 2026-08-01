@@ -10,7 +10,7 @@ const {
 } = require('../controllers/orders');
 const { protect, authorize } = require('../middleware/auth');
 const advancedResults = require('../middleware/advancedResults');
-const Order = require('../models/Order');
+const Order = require('../models/order');
 
 router.use(protect);
 

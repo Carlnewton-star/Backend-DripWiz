@@ -9,7 +9,7 @@ const {
 } = require('../controllers/reviews');
 const { protect, authorize } = require('../middleware/auth');
 const advancedResults = require('../middleware/advancedResults');
-const Review = require('../models/Review');
+const Review = require('../models/review');
 
 router
   .route('/')

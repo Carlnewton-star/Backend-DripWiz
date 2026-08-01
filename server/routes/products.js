@@ -10,7 +10,7 @@ const {
 } = require('../controllers/products');
 const { protect, authorize } = require('../middleware/auth');
 const advancedResults = require('../middleware/advancedResults');
-const Product = require('../models/Product');
+const Product = require('../models/product');
 
 // Include other resource routers
 const reviewRouter = require('./reviews');
