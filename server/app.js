@@ -20,6 +20,8 @@ const auth = require('./routes/auth')
 const users = require('./routes/users')
 const orders = require('./routes/orders')
 const reviews = require('./routes/reviews')
+const stock = require('./routes/stock')
+const blog = require('./routes/blog')
 
 const app = express()
 
@@ -96,6 +98,8 @@ app.use('/api/v1/auth', auth)
 app.use('/api/v1/users', users)
 app.use('/api/v1/orders', orders)
 app.use('/api/v1/reviews', reviews)
+app.use('/api/v1/stock', stock)
+app.use('/api/v1/blog', blog)
 
 // 404 for anything else under /api
 app.use('/api', (req, res) => {
