@@ -51,3 +51,16 @@ A cross-project review (GnG Express, DripWiz, Bree's Beauty Luxe, all under Carl
 **No RBAC beyond the unused role field — importance: low for now, design it alongside the dashboard.** Bree's has owner/manager/stylist with route-level enforcement. DripWiz has no dashboard to gate yet, so this has no user-facing impact today, but the role model should be designed together with the dashboard rather than bolted on afterward.
 
 Not a gap, just noted for awareness: DripWiz already has a Review model with a working controller and routes, and an email pipeline that is coded end to end (just not configured with real SMTP/SendGrid credentials yet) — both ahead of GnG, which has neither.
+
+
+## Gap-closing update (Aug 2026)
+
+Following the audit above, two of the flagged gaps have been closed on the backend, plus the universal blog/marketing must-have from the platform-standards doc.
+
+The stock ledger gap is closed: a new StockMovement collection records every admin-initiated restock, adjustment, or return with a running resulting-stock balance, and admin-only endpoints under /api/v1/stock expose movement history and low-stock alerts. This is an audit trail layered on top of the existing atomic per-order stock decrement in createOrder - it does not replace or risk that transaction-based oversell guard, which was already solid.
+
+The coded-but-unconfigured email pipeline now actually fires: a new Email.isConfigured() guard checks for real SMTP/SendGrid env vars before attempting to send, and createOrder fires an order-confirmation email (fire-and-forget, never blocking or failing the order response) once an order is created. Until real credentials are supplied, this silently no-ops - no owner action was blocking the code itself, only the credentials.
+
+Blog/marketing content management, flagged as a universal must-have in the platform-standards doc, is now built: a BlogPost model with slug generation, draft/published status, and full admin CRUD under /api/v1/blog, plus public endpoints to list published posts and fetch one by slug.
+
+All of the above is backend-only - no admin dashboard consumes any of this yet, including the pre-existing Review endpoints. The no-dashboard and no-checkout/payment-gateway gaps flagged above remain the two critical items before DripWiz is at parity with the platform standard.
