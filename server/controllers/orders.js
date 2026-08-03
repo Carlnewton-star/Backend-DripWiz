@@ -3,6 +3,7 @@ const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const Order = require('../models/order');
 const Product = require('../models/product');
+const Email = require('../utils/sendEmail');
 
 // @desc    Get all orders
 // @route   GET /api/v1/orders
@@ -131,6 +132,14 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       taxPrice,
       totalPrice
     });
+
+        // Best-effort order-confirmation email - fire-and-forget so a slow
+        // or misconfigured SMTP/SendGrid setup never delays or fails the
+        // order response; Email.sendOrderConfirmation() itself no-ops if
+        // Email.isConfigured() is false.
+        new Email(req.user, `${process.env.FRONTEND_URL}/orders/${order._id}`)
+          .sendOrderConfirmation(order, items)
+          .catch((err) => console.error('Order confirmation email failed:', err.message));
 
     res.status(201).json({
       success: true,
