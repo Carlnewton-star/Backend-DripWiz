@@ -16,7 +16,9 @@ stub for future real-time dashboard updates. This pass fixed every concrete bug 
 the previous audit; it did not change the data model (that's `plan.md`'s job) or build
 the frontend (a fresh React/Vite/TypeScript build, tracked separately).
 
-## Fixed in this pass
+## Implemented (fixes from this pass, plus gap-closing additions below)
+
+Gap-closing additions (Aug 2026, on top of the bug-fix pass below): a StockMovement audit-trail ledger (restock/adjustment/return) with admin-only endpoints under /api/v1/stock for movement history and low-stock alerts, layered on top of the existing atomic per-order stock decrement without touching it; a BlogPost model with slug generation and admin CRUD under /api/v1/blog, plus public endpoints to list published posts and fetch one by slug; and Email.isConfigured() plus a real order-confirmation send wired into createOrder (fire-and-forget, never blocks the order response) - the previously coded-but-unconfigured email pipeline now actually fires once real SMTP/SendGrid credentials are set.
 
 - **Server now actually starts.** `app.js` exported nothing (`module.exports = app`
   was missing) and separately called `app.listen()` itself — while `server.js` *also*
