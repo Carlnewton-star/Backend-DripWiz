@@ -76,13 +76,13 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
   // Stock is decremented atomically per item (findOneAndUpdate with a
   // stock >= quantity filter) inside a transaction, and the whole order is
-  // rolled back if anything fails — a referenced product that doesn't
+  // rolled back if anything fails - a referenced product that doesn't
   // exist, or one that's out of stock, previously either crashed with an
   // unhandled TypeError (product.price on a null product) or oversold
   // stock under concurrent requests (nothing ever checked or decremented
   // it at all). This mirrors the stock-oversell guard already built for
   // Bree's Beauty Luxe's Postgres-based catalog, adapted to Mongo's
-  // transaction model — same guarantee, different engine.
+  // transaction model - same guarantee, different engine.
   const session = await mongoose.startSession();
 
   try {
@@ -99,7 +99,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
           if (!product) {
             // Either the product doesn't exist, or there isn't enough
-            // stock — same ErrorResponse either way, but check existence
+            // stock - same ErrorResponse either way, but check existence
             // separately so the message is accurate.
             const exists = await Product.exists({ _id: item.product }).session(session);
             throw new ErrorResponse(
@@ -133,13 +133,13 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
       totalPrice
     });
 
-        // Best-effort order-confirmation email - fire-and-forget so a slow
-        // or misconfigured SMTP/SendGrid setup never delays or fails the
-        // order response; Email.sendOrderConfirmation() itself no-ops if
-        // Email.isConfigured() is false.
-        new Email(req.user, `${process.env.FRONTEND_URL}/orders/${order._id}`)
-          .sendOrderConfirmation(order, items)
-          .catch((err) => console.error('Order confirmation email failed:', err.message));
+    // Best-effort order-confirmation email - fire-and-forget so a slow
+    // or misconfigured SMTP/SendGrid setup never delays or fails the
+    // order response; Email.sendOrderConfirmation() itself no-ops if
+    // Email.isConfigured() is false.
+    new Email(req.user, `${process.env.FRONTEND_URL}/orders/${order._id}`)
+      .sendOrderConfirmation(order, items)
+      .catch((err) => console.error('Order confirmation email failed:', err.message));
 
     res.status(201).json({
       success: true,
@@ -150,9 +150,9 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Update order to paid
-// @route   PUT /api/v1/orders/:id/pay
-// @access  Private
+// @desc    Update order (admin: mark paid and/or delivered)
+// @route   PUT /api/v1/orders/:id
+// @access  Private/Admin
 exports.updateOrder = asyncHandler(async (req, res, next) => {
   const order = await Order.findById(req.params.id);
 
@@ -162,14 +162,25 @@ exports.updateOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  order.isPaid = true;
-  order.paidAt = Date.now();
-  order.paymentResult = {
-    id: req.body.id,
-    status: req.body.status,
-    update_time: req.body.update_time,
-    email_address: req.body.payer.email_address
-  };
+  // Only touch fields the caller actually sent, so this one route backs
+  // both "mark as paid" and "mark as delivered" from the admin dashboard
+  // without clobbering the other flag. Previously this unconditionally
+  // forced isPaid = true and read req.body.payer.email_address with no
+  // guard - a shape meant for a payment-gateway webhook, but nothing
+  // calls this route that way since no payment gateway is wired up yet,
+  // and it threw if those fields were missing.
+  if (req.body.isPaid !== undefined) {
+    order.isPaid = Boolean(req.body.isPaid);
+    order.paidAt = order.isPaid ? Date.now() : undefined;
+    if (req.body.paymentResult) {
+      order.paymentResult = req.body.paymentResult;
+    }
+  }
+
+  if (req.body.isDelivered !== undefined) {
+    order.isDelivered = Boolean(req.body.isDelivered);
+    order.deliveredAt = order.isDelivered ? Date.now() : undefined;
+  }
 
   const updatedOrder = await order.save();
 
