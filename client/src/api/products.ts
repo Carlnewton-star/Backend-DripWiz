@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, apiUpload } from "./client";
 
 export interface ProductImage {
   public_id: string;
@@ -49,3 +49,33 @@ export const PRODUCT_CATEGORIES = [
   "Bags",
   "Accessories",
 ] as const;
+
+// --- Admin ---
+
+export interface ProductInput {
+  name: string;
+  price: number;
+  description: string;
+  category: string;
+  stock: number;
+}
+
+export function fetchAllProductsAdmin(): Promise<ProductsResponse> {
+  return apiRequest<ProductsResponse>("/api/v1/products?limit=200&sort=-createdAt");
+}
+
+export function createProduct(payload: ProductInput): Promise<ProductResponse> {
+  return apiRequest<ProductResponse>("/api/v1/products", { method: "POST", body: payload });
+}
+
+export function updateProduct(id: string, payload: Partial<ProductInput>): Promise<ProductResponse> {
+  return apiRequest<ProductResponse>(`/api/v1/products/${id}`, { method: "PUT", body: payload });
+}
+
+export function deleteProduct(id: string): Promise<{ success: boolean }> {
+  return apiRequest(`/api/v1/products/${id}`, { method: "DELETE" });
+}
+
+export function uploadProductPhoto(id: string, file: File): Promise<{ success: boolean; data: ProductImage[] }> {
+  return apiUpload(`/api/v1/products/${id}/photo`, file);
+}
