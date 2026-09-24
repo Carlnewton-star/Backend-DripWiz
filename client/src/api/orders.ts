@@ -51,3 +51,44 @@ export function createOrder(payload: {
     body: payload,
   });
 }
+
+// --- Admin ---
+
+export interface AdminOrder extends Omit<Order, "products"> {
+  user: { _id: string; name: string; email: string } | string;
+  isDelivered: boolean;
+  paidAt?: string;
+  deliveredAt?: string;
+  products: OrderLineItem[];
+}
+
+interface AdminOrdersResponse {
+  success: boolean;
+  count: number;
+  pagination: Record<string, unknown>;
+  data: AdminOrder[];
+}
+
+export function fetchAllOrders(): Promise<AdminOrdersResponse> {
+  return apiRequest<AdminOrdersResponse>("/api/v1/orders?limit=200&sort=-createdAt");
+}
+
+export function updateOrderStatus(
+  id: string,
+  payload: { isPaid?: boolean; isDelivered?: boolean }
+): Promise<{ success: boolean; data: AdminOrder }> {
+  return apiRequest(`/api/v1/orders/${id}`, { method: "PUT", body: payload });
+}
+
+export function deleteOrderAdmin(id: string): Promise<{ success: boolean }> {
+  return apiRequest(`/api/v1/orders/${id}`, { method: "DELETE" });
+}
+
+export interface SalesStats {
+  numOrders: number;
+  totalSales: number;
+}
+
+export function fetchSalesStats(): Promise<{ success: boolean; data: SalesStats }> {
+  return apiRequest("/api/v1/orders/stats/sales");
+}
